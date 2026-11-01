@@ -9,39 +9,46 @@ import {
 } from "next";
 import { isUserBlocked, logBlockedAccess } from "@/utils/blocklist";
 
-if (!process.env.SESSION_SECRET) {
-  throw new Error(
-    'SESSION_SECRET environment variable is not set. Generate one with "openssl rand -base64 32".'
-  );
+// Validated lazily (at request time) so `next build` can collect page data without the secret.
+let sessionOptions: SessionOptions | undefined;
+
+function getSessionOptions(): SessionOptions {
+  if (sessionOptions) return sessionOptions;
+
+  const code = process.env.SESSION_SECRET;
+  if (!code) {
+    throw new Error(
+      'SESSION_SECRET environment variable is not set. Generate one with "openssl rand -base64 32".'
+    );
+  }
+
+  const strength = zxcvbn(code);
+  if (strength.score < 4) {
+    throw new Error(
+      `SESSION_SECRET is not strong enough. Score: ${strength.score}/4. Please generate a secret, e.g using "openssl rand -base64 32" or use a password manager to generate a secure password.`
+    );
+  }
+
+  sessionOptions = {
+    password: code,
+    cookieName: "firefli_session",
+    cookieOptions: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+      path: '/',
+      domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
+    },
+    ttl: 60 * 60 * 24 * 7,
+  };
+  return sessionOptions;
 }
-
-const strength = zxcvbn(process.env.SESSION_SECRET);
-if (strength.score < 4) {
-  throw new Error(
-    `SESSION_SECRET is not strong enough. Score: ${strength.score}/4. Please generate a secret, e.g using "openssl rand -base64 32" or use a password manager to generate a secure password.`
-  );
-}
-
-const code = process.env.SESSION_SECRET;
-
-const sessionOptions: SessionOptions = {
-  password: code,
-  cookieName: "firefli_session",
-  cookieOptions: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    sameSite: "lax",
-    maxAge: 60 * 60 * 24 * 7,
-    path: '/',
-    domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined,
-  },
-  ttl: 60 * 60 * 24 * 7,
-};
 
 export function withSessionRoute(handler: NextApiHandler) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
     // @ts-ignore
-    req.session = await getIronSession(req, res, sessionOptions);
+    req.session = await getIronSession(req, res, getSessionOptions());
     // @ts-ignore
     if (req.session.userid && isUserBlocked(req.session.userid)) {
       // @ts-ignore
@@ -68,7 +75,7 @@ export function withSessionSsr<
 ) {
   return async (context: GetServerSidePropsContext) => {
     // @ts-ignore
-    context.req.session = await getIronSession(context.req, context.res, sessionOptions);
+    context.req.session = await getIronSession(context.req, context.res, getSessionOptions());
 
     // Check if the user's session should be revoked due to blocklist
     // @ts-ignore
