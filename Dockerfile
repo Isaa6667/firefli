@@ -9,9 +9,11 @@ WORKDIR /usr/src/app
 COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma/
 
-# Allow package build scripts
-ENV PNPM_ALLOW_BUILD_SCRIPTS=*
-RUN pnpm install --no-frozen-lockfile --config.onlyBuiltDependencies[]=@parcel/watcher --config.onlyBuiltDependencies[]=@prisma/engines --config.onlyBuiltDependencies[]=core-js --config.onlyBuiltDependencies[]=esbuild --config.onlyBuiltDependencies[]=prisma --config.onlyBuiltDependencies[]=sharp --config.onlyBuiltDependencies[]=unrs-resolver
+# Configure pnpm to allow all necessary build scripts via .npmrc
+RUN echo "only-built-dependencies=[\"@parcel/watcher\",\"@prisma/engines\",\"core-js\",\"esbuild\",\"prisma\",\"sharp\",\"unrs-resolver\"]" >> .npmrc
+
+RUN pnpm install --no-frozen-lockfile
+
 COPY . .
 
 RUN pnpm exec prisma generate
