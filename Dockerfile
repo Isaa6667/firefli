@@ -11,8 +11,7 @@ COPY prisma ./prisma/
 
 # Allow package build scripts
 ENV PNPM_ALLOW_BUILD_SCRIPTS=*
-RUN pnpm install --no-frozen-lockfile --config.ignore-scripts=false
-
+RUN pnpm install --no-frozen-lockfile --config.onlyBuiltDependencies[]=@parcel/watcher --config.onlyBuiltDependencies[]=@prisma/engines --config.onlyBuiltDependencies[]=core-js --config.onlyBuiltDependencies[]=esbuild --config.onlyBuiltDependencies[]=prisma --config.onlyBuiltDependencies[]=sharp --config.onlyBuiltDependencies[]=unrs-resolver
 COPY . .
 
 RUN pnpm exec prisma generate
