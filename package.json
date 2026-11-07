@@ -9,7 +9,7 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "prisma generate"
   },
   "dependencies": {
     "@prisma/client": "^6.0.0",
@@ -124,7 +124,7 @@
     "eslint-config-next": "^16.2.4",
     "js-yaml": "^4.1.2",
     "postcss": "^8.5.10",
-     "prisma": "^6.0.0"
+     "prisma": "^6.0.0",
     "tailwindcss": "^4.2.4",
     "tsx": "^4.21.0",
     "typescript": "^5.5.0"
