@@ -1,39 +1,34 @@
 FROM node:22-alpine
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install a fixed pnpm version
+RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
-# Create non-root user for security
+# Create non-root user
 RUN addgroup -S firefli && adduser -S firefli -G firefli
 
-# Create app directory
 WORKDIR /usr/src/app
 
-# Install app dependencies
+# Copy dependency files
 COPY package.json pnpm-lock.yaml ./
-# Copy Prisma schema
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
-# Generate Prisma client for the specific platform
+# Generate Prisma client
 RUN pnpm exec prisma generate
 
-# Bundle app source
+# Copy source code
 COPY . .
 
-# Build the app
+# Build application
 RUN pnpm run build
 
-# Set ownership to non-root user
+# Set permissions
 RUN chown -R firefli:firefli /usr/src/app
 
-# Switch to non-root user
 USER firefli
 
-# Expose port 3000
 EXPOSE 3000
 
-# Start the app
 CMD ["pnpm", "run", "start"]
