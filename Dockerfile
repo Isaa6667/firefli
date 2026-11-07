@@ -11,7 +11,7 @@ COPY prisma ./prisma/
 
 # Allow package build scripts
 ENV PNPM_ALLOW_BUILD_SCRIPTS=*
-RUN pnpm install --no-frozen-lockfile
+RUN pnpm install --no-frozen-lockfile --config.ignore-scripts=false
 
 COPY . .
 
